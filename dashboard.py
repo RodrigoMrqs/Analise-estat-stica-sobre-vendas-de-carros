@@ -70,7 +70,7 @@ with tabs[0]:
     col1, col2, col3 = st.columns(3)
     col1.metric("Preço Médio", f"${df_filtered['Price'].mean():,.2f}")
     col2.metric("Idade Média", f"{df_filtered['Car_Age'].mean():.1f} anos")
-    col3.metric("Eficiência Média", f"{df_filtered['Fuel_Efficiency'].mean():.2f} km/l")
+    col3.metric("Eficiência Média", f"{df_filtered['Fuel_Efficiency'].mean():.2f} km")
 
 # ===============================
 # Aba 2 - Fabricantes
