@@ -57,7 +57,8 @@ tabs = st.tabs([
     "🏭 Análises por Fabricante",
     "⛽ Análises por Combustível",
     "📈 Distribuições & Décadas",
-    "📐 Correlações"
+    "📐 Correlações",
+    "📉 Regressão Linear"
 ])
 
 # ===============================
@@ -144,5 +145,86 @@ with tabs[4]:
     sns.scatterplot(data=df_filtered, x='Car_Age', y='Price', hue='Fuel type', alpha=0.6, ax=ax)
     st.pyplot(fig)
 
+# ===============================
+# Aba 7 - Regressão Linear
+# ===============================
+with tabs[5]:
+    st.subheader("📉 Modelo de Regressão Linear Interativo")
 
+    st.markdown("""
+    O modelo de regressão linear permite **estimar o preço dos carros** com base em variáveis como tamanho do motor, quilometragem e idade do carro.
+    Use os filtros laterais e selecione as variáveis abaixo para ajustar o modelo de forma dinâmica.
+    """)
+
+    # Seleção de variáveis preditoras
+    all_features = ["Engine size", "Mileage", "Car_Age", "Fuel_Efficiency"]
+    selected_features = st.multiselect(
+        "Selecione as variáveis independentes (X):",
+        all_features,
+        default=["Engine size", "Mileage", "Car_Age"]
+    )
+
+    if selected_features:
+        from sklearn.linear_model import LinearRegression
+        from sklearn.model_selection import train_test_split
+        from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+        import numpy as np
+
+        X = df_filtered[selected_features]
+        y = df_filtered["Price"]
+
+        if len(X) > 20:  # Garantir que há dados suficientes
+            # Treino e teste
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            model = LinearRegression()
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_test)
+
+            # Resultados numéricos
+            st.markdown("### 📊 Avaliação do Modelo")
+            col1, col2, col3 = st.columns(3)
+            col1.metric("R²", f"{r2_score(y_test, y_pred):.4f}")
+            col2.metric("MAE", f"{mean_absolute_error(y_test, y_pred):.2f}")
+            col3.metric("RMSE", f"{np.sqrt(mean_squared_error(y_test, y_pred)):.2f}")
+
+            # Coeficientes
+            st.markdown("### ⚖️ Coeficientes do Modelo")
+            coef_df = pd.DataFrame(model.coef_, index=selected_features, columns=["Coeficiente"])
+            coef_df.loc["Intercepto"] = model.intercept_
+            st.dataframe(coef_df)
+
+            # Visualização
+            st.markdown("### 📈 Visualização Gráfica")
+
+            if len(selected_features) == 1:
+                # Regressão simples -> gráfico 2D
+                feature = selected_features[0]
+                fig, ax = plt.subplots(figsize=(8, 6))
+                ax.scatter(X_test[feature], y_test, alpha=0.6, label="Dados reais")
+                ax.plot(X_test[feature], y_pred, color="red", linewidth=2, label="Linha de Regressão")
+                ax.set_xlabel(feature)
+                ax.set_ylabel("Preço")
+                ax.set_title(f"Regressão Linear: {feature} x Preço")
+                ax.legend()
+                st.pyplot(fig)
+
+                st.info("👉 A linha vermelha representa a relação prevista entre a variável selecionada e o preço do carro.")
+
+            else:
+                # Comparação valores reais vs previstos
+                fig, ax = plt.subplots(figsize=(8, 6))
+                ax.scatter(y_test, y_pred, alpha=0.6, c="blue", label="Previsões")
+                ax.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], "r--", lw=2, label="Ideal (y=x)")
+                ax.set_xlabel("Preço Real")
+                ax.set_ylabel("Preço Previsto")
+                ax.set_title("Comparação: Preço Real vs Preço Previsto")
+                ax.legend()
+                st.pyplot(fig)
+
+                st.info("👉 Se os pontos estiverem próximos da linha vermelha tracejada, significa que o modelo faz boas previsões.")
+
+        else:
+            st.warning("Poucos dados disponíveis para treinar o modelo.")
+    else:
+        st.info("Selecione ao menos uma variável para treinar o modelo.")
 
